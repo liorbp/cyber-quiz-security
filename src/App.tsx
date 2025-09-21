@@ -633,9 +633,13 @@ function App() {
                       ? "secondary"
                       : "outline"
                 }
-                className={`w-full text-left justify-start p-4 h-auto whitespace-normal ${
+                className={`w-full text-left justify-start p-4 h-auto whitespace-normal transition-colors hover:text-foreground ${
                   showFeedback && index === question.correctAnswer 
-                    ? "border-accent bg-accent/10" 
+                    ? "border-accent bg-accent/20 text-accent-foreground font-medium" 
+                    : ""
+                } ${
+                  !showFeedback && selectedAnswer !== index 
+                    ? "hover:bg-accent/20 hover:border-accent/50" 
                     : ""
                 }`}
                 onClick={() => handleAnswer(index)}
