@@ -10,9 +10,10 @@ import { Label } from '@/components/ui/label'
 import { Play, ArrowClockwise, Shuffle, Clock, Trophy, Moon, Sun, X } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import cyberShieldLogo from '@/assets/images/cyber-shield-logo.svg'
+import questionsData from '@/data/questions.json'
 
 interface Question {
-  id: string
+  id: number
   threat: string
   description: string
   options: string[]
@@ -28,112 +29,7 @@ interface ScoreEntry {
   mode: 'normal' | 'challenge'
 }
 
-const QUESTIONS: Question[] = [
-  {
-    id: '1',
-    threat: 'Living off the Land (LotL)',
-    description: 'Advanced persistent threat technique using legitimate system tools',
-    options: [
-      'Using custom malware to establish persistence',
-      'Exploiting legitimate system binaries and scripts for malicious purposes',
-      'Installing backdoors through software vulnerabilities',
-      'Creating new administrative accounts for lateral movement'
-    ],
-    correctAnswer: 1,
-    explanation: 'LotL attacks leverage trusted, built-in system tools like PowerShell, WMI, or certutil to avoid detection while performing malicious activities.'
-  },
-  {
-    id: '2',
-    threat: 'Fileless Malware',
-    description: 'Memory-resident threats that avoid traditional detection',
-    options: [
-      'Malware that encrypts files on the victim system',
-      'Malware that operates entirely in memory without writing to disk',
-      'Malware that deletes itself after execution',
-      'Malware that uses file compression to avoid detection'
-    ],
-    correctAnswer: 1,
-    explanation: 'Fileless malware resides only in system memory, making it difficult to detect with traditional file-based security solutions.'
-  },
-  {
-    id: '3',
-    threat: 'Supply Chain Attack',
-    description: 'Compromise targeting the software development lifecycle',
-    options: [
-      'Direct attack on an organization\'s primary infrastructure',
-      'Phishing attack targeting supply chain vendors',
-      'Injection of malicious code into legitimate software during development',
-      'Physical theft of hardware components from suppliers'
-    ],
-    correctAnswer: 2,
-    explanation: 'Supply chain attacks compromise legitimate software during development or distribution, affecting all downstream users of that software.'
-  },
-  {
-    id: '4',
-    threat: 'Adversarial AI',
-    description: 'Machine learning model manipulation technique',
-    options: [
-      'Using AI to generate phishing emails',
-      'Training AI models on stolen data',
-      'Crafting inputs designed to fool AI classification systems',
-      'Replacing legitimate AI models with malicious ones'
-    ],
-    correctAnswer: 2,
-    explanation: 'Adversarial AI involves creating specially crafted inputs that cause AI systems to make incorrect classifications or decisions.'
-  },
-  {
-    id: '5',
-    threat: 'Golden Ticket Attack',
-    description: 'Kerberos authentication bypass in Active Directory',
-    options: [
-      'Stealing password hashes from domain controllers',
-      'Forging Kerberos TGTs using compromised KRBTGT account hash',
-      'Brute forcing administrator passwords',
-      'Exploiting unpatched domain controller vulnerabilities'
-    ],
-    correctAnswer: 1,
-    explanation: 'Golden Ticket attacks use the compromised KRBTGT account hash to forge valid Kerberos Ticket Granting Tickets, providing domain-wide access.'
-  },
-  {
-    id: '6',
-    threat: 'UEFI Rootkit',
-    description: 'Firmware-level persistent threat',
-    options: [
-      'Malware that infects USB boot devices',
-      'Rootkit that modifies the Windows boot manager',
-      'Malicious code embedded in the system firmware/BIOS',
-      'Kernel-level rootkit using driver signing bypass'
-    ],
-    correctAnswer: 2,
-    explanation: 'UEFI rootkits infect the system firmware, executing before the operating system loads and persisting through OS reinstalls.'
-  },
-  {
-    id: '7',
-    threat: 'DNS Tunneling',
-    description: 'Covert channel data exfiltration technique',
-    options: [
-      'Redirecting DNS queries to malicious servers',
-      'Encoding data within DNS query names and responses',
-      'Poisoning DNS cache entries',
-      'Using DNS over HTTPS to bypass filters'
-    ],
-    correctAnswer: 1,
-    explanation: 'DNS tunneling embeds data within DNS queries and responses, creating a covert communication channel that often bypasses network security controls.'
-  },
-  {
-    id: '8',
-    threat: 'Process Hollowing',
-    description: 'Steganographic code injection technique',
-    options: [
-      'Injecting code into existing running processes',
-      'Creating a legitimate process and replacing its memory with malicious code',
-      'Hiding malicious processes using rootkit techniques',
-      'Terminating security processes to avoid detection'
-    ],
-    correctAnswer: 1,
-    explanation: 'Process hollowing creates a legitimate process in suspended state, then replaces its memory contents with malicious code before resuming execution.'
-  }
-]
+const QUESTIONS: Question[] = questionsData as Question[]
 
 function App() {
   const [currentQuestion, setCurrentQuestion] = useState(0)
@@ -143,7 +39,7 @@ function App() {
   const [quizStarted, setQuizStarted] = useState(false)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
-  const [usedQuestions, setUsedQuestions] = useState<string[]>([])
+  const [usedQuestions, setUsedQuestions] = useState<number[]>([])
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [timeLeft, setTimeLeft] = useState(30)
   const [totalTime, setTotalTime] = useState(0)

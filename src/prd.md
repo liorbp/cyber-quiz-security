@@ -21,9 +21,14 @@
 ## Essential Features
 
 ### Endless Quiz Mode
-- **What it does**: Continuous question flow with random selection from question pool
+- **What it does**: Continuous question flow with random selection from question pool loaded from external JSON file
 - **Why it matters**: Maintains engagement and provides unlimited practice opportunities
 - **Success criteria**: Users can play indefinitely until making 3 mistakes
+
+### External Question Data
+- **What it does**: Questions loaded from separate JSON file for easy maintenance and updates
+- **Why it matters**: Allows for content updates without code changes, better separation of concerns
+- **Success criteria**: Questions load dynamically from `/src/data/questions.json` file
 
 ### Three-Strike System
 - **What it does**: Game ends after 3 incorrect answers, creating tension and consequence
