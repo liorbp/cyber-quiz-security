@@ -303,7 +303,8 @@ function App() {
                 <img 
                   src={cyberShieldLogo} 
                   alt="Cyber Quiz Logo" 
-                  className="w-12 h-12 text-primary"
+                  className="w-12 h-12"
+                  style={{ filter: 'brightness(0) saturate(100%) invert(67%) sepia(15%) saturate(300%) hue-rotate(120deg) brightness(95%) contrast(90%)' }}
                 />
                 <div className="space-y-2">
                   <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
@@ -575,7 +576,8 @@ function App() {
             <img 
               src={cyberShieldLogo} 
               alt="Cyber Quiz Logo" 
-              className="w-6 h-6 text-primary"
+              className="w-6 h-6"
+              style={{ filter: 'brightness(0) saturate(100%) invert(67%) sepia(15%) saturate(300%) hue-rotate(120deg) brightness(95%) contrast(90%)' }}
             />
             <div className="text-primary font-mono">CYBER_QUIZ.exe</div>
           </div>
