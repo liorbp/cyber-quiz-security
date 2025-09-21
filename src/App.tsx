@@ -610,9 +610,6 @@ function App() {
             <CardTitle className="text-xl text-primary font-mono">
               {question.threat}
             </CardTitle>
-            <p className="text-muted-foreground text-sm">
-              {question.description}
-            </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-foreground mb-4">
