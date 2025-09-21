@@ -24,6 +24,7 @@ interface ScoreEntry {
   score: number
   date: string
   questionsAnswered: number
+  mode: 'normal' | 'challenge'
 }
 
 const QUESTIONS: Question[] = [
@@ -150,6 +151,7 @@ function App() {
   const [playerName, setPlayerName] = useState('')
   const [showNameDialog, setShowNameDialog] = useState(false)
   const [showScoreboard, setShowScoreboard] = useState(false)
+  const [quizMode, setQuizMode] = useState<'normal' | 'challenge'>('normal')
   const [isDarkMode, setIsDarkMode] = useKV<boolean>('cyber-quiz-dark-mode', true)
 
   const [highScore, setHighScore] = useKV<number>('cyber-quiz-high-score', 0)
@@ -187,6 +189,8 @@ function App() {
   }
 
   const startQuiz = (enableTimer = false) => {
+    const mode = enableTimer ? 'challenge' : 'normal'
+    setQuizMode(mode)
     const firstQuestion = getRandomQuestion()
     setQuestions([firstQuestion])
     setUsedQuestions([firstQuestion.id])
@@ -244,12 +248,13 @@ function App() {
       name: playerName.trim(),
       score: score,
       date: new Date().toLocaleDateString(),
-      questionsAnswered: questionsAnswered
+      questionsAnswered: questionsAnswered,
+      mode: quizMode
     }
     
     const updatedScoreboard = [...(scoreboard || []), newEntry]
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10) // Keep only top 10
+      .slice(0, 20) // Keep top 20 total (10 per mode max)
     
     setScoreboard(updatedScoreboard)
     
@@ -259,6 +264,12 @@ function App() {
     
     setShowNameDialog(false)
     setPlayerName('')
+    resetQuiz()
+  }
+
+  const abortQuiz = () => {
+    setQuizCompleted(true)
+    setShowNameDialog(true)
   }
 
   const resetQuiz = () => {
@@ -306,6 +317,7 @@ function App() {
           <CardContent className="space-y-4">
             <div className="text-sm text-muted-foreground space-y-1">
               <p>• Endless threat scenarios</p>
+              <p>• Both modes are endless games</p>
               <p>• Game over after 3 wrong answers</p>
               <p>• Hall of Fame leaderboard</p>
               <p>• Professional-grade content</p>
@@ -317,7 +329,7 @@ function App() {
                 size="lg"
               >
                 <Play className="mr-2 h-4 w-4" />
-                START ENDLESS QUIZ
+                START QUIZ
               </Button>
               <Button 
                 onClick={() => startQuiz(true)} 
@@ -334,29 +346,74 @@ function App() {
                     HALL OF FAME
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-lg">
                   <DialogHeader>
                     <DialogTitle className="text-primary">🏆 HALL OF FAME</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {(scoreboard || []).length === 0 ? (
-                      <p className="text-muted-foreground text-center py-4">
-                        No scores yet. Be the first!
-                      </p>
-                    ) : (
-                      (scoreboard || []).map((entry, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-card/50 rounded">
-                          <div className="flex items-center gap-2">
-                            <span className="text-accent font-mono">#{index + 1}</span>
-                            <span className="font-medium">{entry.name}</span>
-                          </div>
-                          <div className="text-right text-sm">
-                            <div className="text-primary font-bold">{entry.score}</div>
-                            <div className="text-muted-foreground">{entry.questionsAnswered} questions</div>
-                          </div>
-                        </div>
-                      ))
-                    )}
+                  <div className="space-y-6 max-h-96 overflow-y-auto">
+                    {/* Normal Mode Scoreboard */}
+                    <div>
+                      <h3 className="text-accent font-semibold mb-3 flex items-center gap-2">
+                        <Play className="h-4 w-4" />
+                        Normal Mode
+                      </h3>
+                      <div className="space-y-2">
+                        {(scoreboard || []).filter(entry => (entry.mode || 'normal') === 'normal').length === 0 ? (
+                          <p className="text-muted-foreground text-center py-2 text-sm">
+                            No scores yet
+                          </p>
+                        ) : (
+                          (scoreboard || [])
+                            .filter(entry => (entry.mode || 'normal') === 'normal')
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 5)
+                            .map((entry, index) => (
+                              <div key={`normal-${index}`} className="flex items-center justify-between p-2 bg-card/50 rounded">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-accent font-mono">#{index + 1}</span>
+                                  <span className="font-medium">{entry.name}</span>
+                                </div>
+                                <div className="text-right text-sm">
+                                  <div className="text-primary font-bold">{entry.score}</div>
+                                  <div className="text-muted-foreground">{entry.questionsAnswered} questions</div>
+                                </div>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Challenge Mode Scoreboard */}
+                    <div>
+                      <h3 className="text-accent font-semibold mb-3 flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Challenge Mode
+                      </h3>
+                      <div className="space-y-2">
+                        {(scoreboard || []).filter(entry => entry.mode === 'challenge').length === 0 ? (
+                          <p className="text-muted-foreground text-center py-2 text-sm">
+                            No scores yet
+                          </p>
+                        ) : (
+                          (scoreboard || [])
+                            .filter(entry => entry.mode === 'challenge')
+                            .sort((a, b) => b.score - a.score)
+                            .slice(0, 5)
+                            .map((entry, index) => (
+                              <div key={`challenge-${index}`} className="flex items-center justify-between p-2 bg-card/50 rounded">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-accent font-mono">#{index + 1}</span>
+                                  <span className="font-medium">{entry.name}</span>
+                                </div>
+                                <div className="text-right text-sm">
+                                  <div className="text-primary font-bold">{entry.score}</div>
+                                  <div className="text-muted-foreground">{entry.questionsAnswered} questions</div>
+                                </div>
+                              </div>
+                            ))
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -412,9 +469,14 @@ function App() {
         <Card className="w-full max-w-md text-center border-2 border-primary/30">
           <CardHeader>
             <CardTitle className="text-2xl text-primary">GAME OVER</CardTitle>
-            <Badge className="bg-destructive text-destructive-foreground">
-              3 wrong answers reached
-            </Badge>
+            <div className="flex items-center justify-center gap-2">
+              <Badge className="bg-destructive text-destructive-foreground">
+                {wrongAnswers >= 3 ? '3 wrong answers reached' : 'Game aborted'}
+              </Badge>
+              <Badge variant="outline" className="capitalize">
+                {quizMode} mode
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -452,6 +514,42 @@ function App() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Name Dialog for Game Over */}
+        <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-primary">Enter Hall of Fame</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-accent">{score}</div>
+                <div className="text-sm text-muted-foreground">
+                  {questionsAnswered} questions answered • {quizMode} mode
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="playerName">Your Name</Label>
+                <Input
+                  id="playerName"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Enter your name..."
+                  maxLength={20}
+                  onKeyPress={(e) => e.key === 'Enter' && addToScoreboard()}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={addToScoreboard} className="flex-1" disabled={!playerName.trim()}>
+                  Add to Hall of Fame
+                </Button>
+                <Button variant="outline" onClick={() => { setShowNameDialog(false); resetQuiz(); }}>
+                  Skip
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
@@ -543,7 +641,7 @@ function App() {
 
         {/* Quick Actions */}
         <div className="flex gap-2 text-xs">
-          <Button variant="ghost" size="sm" onClick={resetQuiz}>
+          <Button variant="ghost" size="sm" onClick={abortQuiz}>
             <ArrowClockwise className="mr-1 h-3 w-3" />
             ABORT
           </Button>
