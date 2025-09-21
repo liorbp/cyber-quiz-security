@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Play, ArrowClockwise, Shuffle, Clock, Trophy, Moon, Sun, X } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
+import cyberShieldLogo from '@/assets/images/cyber-shield-logo.svg'
 
 interface Question {
   id: string
@@ -298,8 +299,15 @@ function App() {
         <Card className="w-full max-w-md text-center border-2 border-primary/30">
           <CardHeader className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
+              <div className="flex items-center gap-3">
+                <img 
+                  src={cyberShieldLogo} 
+                  alt="Cyber Quiz Logo" 
+                  className="w-12 h-12 text-primary"
+                />
+                <div className="space-y-2">
+                  <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Sun className="h-4 w-4" />
@@ -563,7 +571,14 @@ function App() {
       <div className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between text-sm">
-          <div className="text-primary font-mono">CYBER_QUIZ.exe</div>
+          <div className="flex items-center gap-2">
+            <img 
+              src={cyberShieldLogo} 
+              alt="Cyber Quiz Logo" 
+              className="w-6 h-6 text-primary"
+            />
+            <div className="text-primary font-mono">CYBER_QUIZ.exe</div>
+          </div>
           <div className="flex items-center gap-4">
             <Badge variant="outline">
               Question #{questionsAnswered + 1}
