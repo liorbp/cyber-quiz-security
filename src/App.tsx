@@ -641,9 +641,14 @@ function App() {
                   !showFeedback && selectedAnswer !== index 
                     ? "hover:bg-accent/20 hover:border-accent/50" 
                     : ""
+                } ${
+                  selectedAnswer !== null && !showFeedback 
+                    ? "opacity-100" 
+                    : ""
                 }`}
                 onClick={() => handleAnswer(index)}
                 disabled={selectedAnswer !== null}
+                style={selectedAnswer !== null ? { opacity: 1 } : {}}
               >
                 <span className="font-mono mr-2 text-xs opacity-60">
                   {String.fromCharCode(65 + index)}.
