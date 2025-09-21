@@ -3,7 +3,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Play, ArrowClockwise, Shuffle, Clock } from '@phosphor-icons/react'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { Play, ArrowClockwise, Shuffle, Clock, Trophy, Moon, Sun, X } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 
 interface Question {
@@ -13,6 +17,13 @@ interface Question {
   options: string[]
   correctAnswer: number
   explanation: string
+}
+
+interface ScoreEntry {
+  name: string
+  score: number
+  date: string
+  questionsAnswered: number
 }
 
 const QUESTIONS: Question[] = [
@@ -130,11 +141,28 @@ function App() {
   const [quizStarted, setQuizStarted] = useState(false)
   const [quizCompleted, setQuizCompleted] = useState(false)
   const [questions, setQuestions] = useState<Question[]>([])
+  const [usedQuestions, setUsedQuestions] = useState<string[]>([])
   const [timerEnabled, setTimerEnabled] = useState(false)
   const [timeLeft, setTimeLeft] = useState(30)
   const [totalTime, setTotalTime] = useState(0)
+  const [wrongAnswers, setWrongAnswers] = useState(0)
+  const [questionsAnswered, setQuestionsAnswered] = useState(0)
+  const [playerName, setPlayerName] = useState('')
+  const [showNameDialog, setShowNameDialog] = useState(false)
+  const [showScoreboard, setShowScoreboard] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useKV<boolean>('cyber-quiz-dark-mode', true)
 
   const [highScore, setHighScore] = useKV<number>('cyber-quiz-high-score', 0)
+  const [scoreboard, setScoreboard] = useKV<ScoreEntry[]>('cyber-quiz-scoreboard', [])
+
+  // Theme effect
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [isDarkMode])
 
   useEffect(() => {
     if (timerEnabled && quizStarted && !quizCompleted && !showFeedback && timeLeft > 0) {
@@ -148,12 +176,25 @@ function App() {
     }
   }, [timerEnabled, quizStarted, quizCompleted, showFeedback, timeLeft])
 
+  const getRandomQuestion = () => {
+    const availableQuestions = QUESTIONS.filter(q => !usedQuestions.includes(q.id))
+    if (availableQuestions.length === 0) {
+      // Reset used questions if all have been used
+      setUsedQuestions([])
+      return QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)]
+    }
+    return availableQuestions[Math.floor(Math.random() * availableQuestions.length)]
+  }
+
   const startQuiz = (enableTimer = false) => {
-    const shuffledQuestions = [...QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 5)
-    setQuestions(shuffledQuestions)
+    const firstQuestion = getRandomQuestion()
+    setQuestions([firstQuestion])
+    setUsedQuestions([firstQuestion.id])
     setQuizStarted(true)
     setCurrentQuestion(0)
     setScore(0)
+    setWrongAnswers(0)
+    setQuestionsAnswered(0)
     setQuizCompleted(false)
     setSelectedAnswer(null)
     setShowFeedback(false)
@@ -167,26 +208,57 @@ function App() {
     
     setSelectedAnswer(answerIndex)
     setShowFeedback(true)
+    setQuestionsAnswered(prev => prev + 1)
     
-    if (answerIndex === questions[currentQuestion].correctAnswer) {
+    const isCorrect = answerIndex === questions[currentQuestion].correctAnswer
+    
+    if (isCorrect) {
       const timeBonus = timerEnabled ? Math.max(0, timeLeft) : 20
       setScore(prev => prev + 20 + timeBonus)
+    } else {
+      setWrongAnswers(prev => prev + 1)
     }
 
     setTimeout(() => {
-      if (currentQuestion + 1 < questions.length) {
+      if (wrongAnswers + (isCorrect ? 0 : 1) >= 3) {
+        // Game over - 3 wrong answers
+        setQuizCompleted(true)
+        setShowNameDialog(true)
+      } else {
+        // Continue with next question
+        const nextQuestion = getRandomQuestion()
+        setQuestions([...questions, nextQuestion])
+        setUsedQuestions(prev => [...prev, nextQuestion.id])
         setCurrentQuestion(prev => prev + 1)
         setSelectedAnswer(null)
         setShowFeedback(false)
         setTimeLeft(30)
-      } else {
-        setQuizCompleted(true)
-        const finalScore = score + (selectedAnswer === questions[currentQuestion].correctAnswer ? 20 + (timerEnabled ? timeLeft : 20) : 0)
-        if (finalScore > (highScore || 0)) {
-          setHighScore(finalScore)
-        }
       }
     }, 3000)
+  }
+
+  const addToScoreboard = () => {
+    if (!playerName.trim()) return
+    
+    const newEntry: ScoreEntry = {
+      name: playerName.trim(),
+      score: score,
+      date: new Date().toLocaleDateString(),
+      questionsAnswered: questionsAnswered
+    }
+    
+    const updatedScoreboard = [...(scoreboard || []), newEntry]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10) // Keep only top 10
+    
+    setScoreboard(updatedScoreboard)
+    
+    if (score > (highScore || 0)) {
+      setHighScore(score)
+    }
+    
+    setShowNameDialog(false)
+    setPlayerName('')
   }
 
   const resetQuiz = () => {
@@ -195,9 +267,14 @@ function App() {
     setSelectedAnswer(null)
     setShowFeedback(false)
     setScore(0)
+    setWrongAnswers(0)
+    setQuestionsAnswered(0)
     setQuizCompleted(false)
+    setUsedQuestions([])
     setTimeLeft(30)
     setTotalTime(0)
+    setShowNameDialog(false)
+    setPlayerName('')
   }
 
   if (!quizStarted) {
@@ -205,9 +282,19 @@ function App() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center border-2 border-primary/30">
           <CardHeader className="space-y-4">
-            <div className="space-y-2">
-              <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
-              <p className="text-muted-foreground text-sm">v2.4.1 // THREAT_INTEL_MODULE</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
+                <p className="text-muted-foreground text-sm">v3.0.0 // ENDLESS_MODE</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Sun className="h-4 w-4" />
+                <Switch 
+                  checked={isDarkMode} 
+                  onCheckedChange={setIsDarkMode}
+                />
+                <Moon className="h-4 w-4" />
+              </div>
             </div>
             <p className="text-lg text-foreground">Sharpen Your Edge in Seconds</p>
             {(highScore || 0) > 0 && (
@@ -218,8 +305,9 @@ function App() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>• 5 advanced threat scenarios</p>
-              <p>• Instant feedback & scoring</p>
+              <p>• Endless threat scenarios</p>
+              <p>• Game over after 3 wrong answers</p>
+              <p>• Hall of Fame leaderboard</p>
               <p>• Professional-grade content</p>
             </div>
             <div className="space-y-2">
@@ -229,7 +317,7 @@ function App() {
                 size="lg"
               >
                 <Play className="mr-2 h-4 w-4" />
-                START QUIZ
+                START ENDLESS QUIZ
               </Button>
               <Button 
                 onClick={() => startQuiz(true)} 
@@ -239,33 +327,100 @@ function App() {
                 <Clock className="mr-2 h-4 w-4" />
                 CHALLENGE MODE (30s per question)
               </Button>
+              <Dialog open={showScoreboard} onOpenChange={setShowScoreboard}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="w-full">
+                    <Trophy className="mr-2 h-4 w-4" />
+                    HALL OF FAME
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle className="text-primary">🏆 HALL OF FAME</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {(scoreboard || []).length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        No scores yet. Be the first!
+                      </p>
+                    ) : (
+                      (scoreboard || []).map((entry, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-card/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <span className="text-accent font-mono">#{index + 1}</span>
+                            <span className="font-medium">{entry.name}</span>
+                          </div>
+                          <div className="text-right text-sm">
+                            <div className="text-primary font-bold">{entry.score}</div>
+                            <div className="text-muted-foreground">{entry.questionsAnswered} questions</div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </CardContent>
         </Card>
+
+        {/* Name Dialog */}
+        <Dialog open={showNameDialog} onOpenChange={setShowNameDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="text-primary">Enter Hall of Fame</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-accent">{score}</div>
+                <div className="text-sm text-muted-foreground">
+                  {questionsAnswered} questions answered
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="playerName">Your Name</Label>
+                <Input
+                  id="playerName"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Enter your name..."
+                  maxLength={20}
+                  onKeyPress={(e) => e.key === 'Enter' && addToScoreboard()}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={addToScoreboard} className="flex-1" disabled={!playerName.trim()}>
+                  Add to Hall of Fame
+                </Button>
+                <Button variant="outline" onClick={() => setShowNameDialog(false)}>
+                  Skip
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     )
   }
 
   if (quizCompleted) {
     const finalScore = score
-    const percentage = Math.round((finalScore / (questions.length * (timerEnabled ? 50 : 20))) * 100)
-    const currentHighScore = (highScore || 0)
-    const isNewRecord = finalScore > currentHighScore
+    const percentage = questionsAnswered > 0 ? Math.round((questionsAnswered - wrongAnswers) / questionsAnswered * 100) : 0
     
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center border-2 border-primary/30">
           <CardHeader>
-            <CardTitle className="text-2xl text-primary">MISSION COMPLETE</CardTitle>
-            {isNewRecord && (
-              <Badge className="bg-accent text-accent-foreground">NEW RECORD!</Badge>
-            )}
+            <CardTitle className="text-2xl text-primary">GAME OVER</CardTitle>
+            <Badge className="bg-destructive text-destructive-foreground">
+              3 wrong answers reached
+            </Badge>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <div className="text-4xl font-bold text-accent">{finalScore}</div>
               <div className="text-sm text-muted-foreground">
-                {percentage}% accuracy • {questions.length} threats analyzed
+                {percentage}% accuracy • {questionsAnswered} questions answered
               </div>
               {timerEnabled && (
                 <div className="text-xs text-muted-foreground">
@@ -280,18 +435,19 @@ function App() {
                 {percentage >= 80 && <p>→ Elite threat hunter status</p>}
                 {percentage >= 60 && percentage < 80 && <p>→ Solid cybersecurity foundation</p>}
                 {percentage < 60 && <p>→ Additional training recommended</p>}
-                <p>→ Threats covered: APT tactics, malware variants</p>
+                <p>→ Questions survived: {questionsAnswered}</p>
+                <p>→ Wrong answers: {wrongAnswers}/3</p>
               </div>
             </div>
 
             <div className="space-y-2">
               <Button onClick={resetQuiz} className="w-full">
                 <ArrowClockwise className="mr-2 h-4 w-4" />
-                RETRY QUIZ
+                TRY AGAIN
               </Button>
-              <Button onClick={() => startQuiz(timerEnabled)} variant="outline" className="w-full">
-                <Shuffle className="mr-2 h-4 w-4" />
-                SHUFFLE & RESTART
+              <Button onClick={() => setShowScoreboard(true)} variant="outline" className="w-full">
+                <Trophy className="mr-2 h-4 w-4" />
+                VIEW HALL OF FAME
               </Button>
             </div>
           </CardContent>
@@ -301,7 +457,6 @@ function App() {
   }
 
   const question = questions[currentQuestion]
-  const progress = ((currentQuestion + 1) / questions.length) * 100
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -311,10 +466,14 @@ function App() {
           <div className="text-primary font-mono">CYBER_QUIZ.exe</div>
           <div className="flex items-center gap-4">
             <Badge variant="outline">
-              Question {currentQuestion + 1}/{questions.length}
+              Question #{questionsAnswered + 1}
             </Badge>
             <Badge className="bg-accent text-accent-foreground">
               Score: {score}
+            </Badge>
+            <Badge variant={wrongAnswers >= 2 ? "destructive" : "outline"}>
+              <X className="mr-1 h-3 w-3" />
+              {wrongAnswers}/3
             </Badge>
             {timerEnabled && (
               <Badge variant={timeLeft <= 10 ? "destructive" : "outline"}>
@@ -324,9 +483,6 @@ function App() {
             )}
           </div>
         </div>
-
-        {/* Progress */}
-        <Progress value={progress} className="h-2" />
 
         {/* Question Card */}
         <Card className="border-2 border-primary/30">
