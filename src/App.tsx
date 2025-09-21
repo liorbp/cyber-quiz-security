@@ -227,7 +227,9 @@ function App() {
       if (wrongAnswers + (isCorrect ? 0 : 1) >= 3) {
         // Game over - 3 wrong answers
         setQuizCompleted(true)
-        setShowNameDialog(true)
+        if (score > 0) {
+          setShowNameDialog(true)
+        }
       } else {
         // Continue with next question
         const nextQuestion = getRandomQuestion()
@@ -269,7 +271,9 @@ function App() {
 
   const abortQuiz = () => {
     setQuizCompleted(true)
-    setShowNameDialog(true)
+    if (score > 0) {
+      setShowNameDialog(true)
+    }
   }
 
   const resetQuiz = () => {
@@ -296,7 +300,6 @@ function App() {
             <div className="flex items-center justify-between">
               <div className="space-y-2">
                 <CardTitle className="text-3xl font-bold text-primary">CYBER QUIZ</CardTitle>
-                <p className="text-muted-foreground text-sm">v3.0.0 // ENDLESS_MODE</p>
               </div>
               <div className="flex items-center space-x-2">
                 <Sun className="h-4 w-4" />
@@ -317,9 +320,8 @@ function App() {
           <CardContent className="space-y-4">
             <div className="text-sm text-muted-foreground space-y-1">
               <p>• Endless threat scenarios</p>
-              <p>• Both modes are endless games</p>
+              <p>• Normal & Challenge game modes</p>
               <p>• Game over after 3 wrong answers</p>
-              <p>• Hall of Fame leaderboard</p>
               <p>• Professional-grade content</p>
             </div>
             <div className="space-y-2">
