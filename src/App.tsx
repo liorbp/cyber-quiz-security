@@ -635,7 +635,7 @@ function App() {
                 }
                 className={`w-full text-left justify-start p-4 h-auto whitespace-normal transition-colors hover:text-foreground ${
                   showFeedback && index === question.correctAnswer 
-                    ? "border-accent bg-accent/20 text-accent-foreground font-medium" 
+                    ? "border-accent bg-accent/20 text-white font-medium" 
                     : ""
                 } ${
                   !showFeedback && selectedAnswer !== index 
